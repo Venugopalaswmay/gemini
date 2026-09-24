@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibe Now — AI Local Discovery</title>
+<!-- Google Fonts & Material Symbols -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+  :root {
+    --accent: #7c3aed;
+    --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    --bg-main: #f8fafc;
+    --bg-gradient: radial-gradient(circle at 50% 0%, #f3e8ff 0%, #f8fafc 70%);
+    --header-bg: rgba(255, 255, 255, 0.85);
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --chip-bg: rgba(255, 255, 255, 0.9);
+    --input-bg: #ffffff;
+  }
+
+  body.dark-mode {
+    --bg-main: #0f172a;
+    --bg-gradient: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 70%);
+    --header-bg: rgba(15, 23, 42, 0.85);
+    --card-bg: #1e293b;
+    --border: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --chip-bg: rgba(30, 41, 59, 0.9);
+    --input-bg: #1e293b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* Header Layout & Actions */
+  header {
+    background: var(--header-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .header-icon {
+    background: var(--accent-gradient);
+    color: #fff;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  }
+  .header-titles h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+  .header-titles p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .location-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--accent);
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    transition: all 0.2s ease;
+  }
+  .location-pill:hover {
+    background: rgba(124, 58, 237, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .icon-btn:hover {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  
+  /* Dialogue Log Container */
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1rem;
+    max-width: 820px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  
+  /* Message Row with Avatar & Dialogue Bubble */
+  .msg-row {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 88%;
+    animation: fadeIn 0.25s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg-row.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+  .msg-row.agent {
+    align-self: flex-start;
+  }
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+  }
+  .msg-row.agent .avatar {
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+  }
+  .msg-row.user .avatar {
+    background: var(--border);
+    color: var(--text-secondary);
+  }
+  
+  .bubble {
+    padding: 0.85rem 1.15rem;
+    border-radius: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg-row.user .bubble {
+    background: var(--accent-gradient);
+    color: #ffffff;
+    border: none;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+  }
+  .msg-row.agent .bubble {
+    border-top-left-radius: 4px;
+  }
+  .bubble.rich {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    width: 100%;
+    white-space: normal;
+  }
+
+  /* Animated Typing Indicator */
+  .typing-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+  .typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .typing-indicator span {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+  }
+  .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  /* Category Vibe Filters & Prompt Pills */
+  .footer-container {
+    max-width: 820px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1rem 1.2rem;
+  }
+  .vibe-filters-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.3rem;
+    scrollbar-width: none;
+  }
+  .vibe-filters-row::-webkit-scrollbar { display: none; }
+  .vibe-tag {
+    background: rgba(124, 58, 237, 0.08);
+    color: var(--accent);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 14px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .vibe-tag:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+  }
+
+  .examples-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .example-chip {
+    background: var(--chip-bg);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+  .example-chip:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  }
+  form {
+    display: flex;
+    gap: 0.6rem;
+    background: var(--input-bg);
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    align-items: center;
+  }
+  form:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  }
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: transparent;
+  }
+  button[type="submit"] {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+  }
+  button[type="submit"]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 14px rgba(124, 58, 237, 0.4);
+  }
+
+  /* Image Lightbox Modal */
+  .lightbox-modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    justify-content: center;
+    align-items: center;
+  }
+  .lightbox-modal.active { display: flex; }
+  .lightbox-content {
+    max-width: 90%; max-height: 85%;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 20px; right: 25px;
+    color: #fff; font-size: 2rem;
+    cursor: pointer; font-weight: bold;
+  }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed;
+    bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #0f172a; color: #fff;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 50;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* --- A2UI Component Styles --- */
+  .a2card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.1rem;
+    background: var(--card-bg);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    max-width: 100%;
+    border-top: 3px solid var(--accent);
+  }
+  .a2card + .a2card, .a2col > .a2card { margin-top: 0.6rem; }
+  .a2col { display: flex; flex-direction: column; gap: 0.5rem; }
+  .a2row { display: flex; flex-direction: row; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  .a2row.between { justify-content: space-between; }
+  .a2text { margin: 0; line-height: 1.45; }
+  .a2text.a2-h1 { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+  .a2text.a2-h2 { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); }
+  .a2text.a2-h3 { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); }
+  .a2text.a2-h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+  .a2text.a2-caption { font-size: 0.85rem; color: var(--text-secondary); }
+  .a2divider { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; width: 100%; }
+  .a2img { max-width: 100%; border-radius: 12px; display: block; cursor: pointer; transition: transform 0.2s; }
+  .a2img:hover { transform: scale(1.02); }
+  .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-size: 1.25rem; line-height: 1; vertical-align: middle; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-icon">
+      <span class="material-symbols-outlined">explore</span>
+    </div>
+    <div class="header-titles">
+      <h1>Vibe Now</h1>
+      <p>AI Travel & Local Vibe Assistant</p>
+    </div>
+    <div class="location-pill" onclick="changeLocation()" title="Click to change active location">
+      <span class="material-symbols-outlined">location_on</span>
+      <span id="loc-text">Groningen, NL</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="exportChat()" title="Copy transcript">
+      <span class="material-symbols-outlined">content_copy</span>
+    </button>
+    <button class="icon-btn" onclick="clearChat()" title="Clear conversation">
+      <span class="material-symbols-outlined">delete</span>
+    </button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+      <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+    </button>
+  </div>
+</header>
+
+<div id="log"></div>
+
+<div class="footer-container">
+  <div class="vibe-filters-row">
+    <button type="button" class="vibe-tag" onclick="filterVibe('cafes')">☕ Cafes</button>
+    <button type="button" class="vibe-tag" onclick="filterVibe('rooftop bars')">🍸 Rooftops & Bars</button>
+    <button type="button" class="vibe-tag" onclick="filterVibe('parks and nature')">🌿 Parks & Nature</button>
+    <button type="button" class="vibe-tag" onclick="filterVibe('museums and art')">🎨 Art & Culture</button>
+    <button type="button" class="vibe-tag" onclick="filterVibe('quiet workspaces')">📚 Workspaces</button>
+  </div>
+
+  <div class="examples-row">
+    <button type="button" class="example-chip" onclick="sendExample('Find cozy cafes in Groningen')">
+      ☕ Cozy cafes in Groningen
+    </button>
+    <button type="button" class="example-chip" onclick="sendExample('Recommend peaceful vibe spots in Hyderabad')">
+      🌿 Vibe spots in Hyderabad
+    </button>
+    <button type="button" class="example-chip" onclick="sendExample('Find rooftop bars and parks nearby')">
+      🌆 Rooftop bars & parks
+    </button>
+  </div>
+
+  <form id="form">
+    <input id="input" placeholder="Ask Vibe Now about places, cafes, or vibes..." autocomplete="off" autofocus>
+    <button type="submit" aria-label="Send message">
+      <span class="material-symbols-outlined" style="color:#fff;">send</span>
+    </button>
+  </form>
+</div>
+
+<!-- Image Lightbox Modal -->
+<div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox()">
+  <span class="lightbox-close">&times;</span>
+  <img id="lightboxImg" class="lightbox-content" src="" alt="Enlarged view">
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">Transcript copied to clipboard!</div>
+
+<script>
+const log = document.getElementById("log");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+let activeLocation = "Groningen, NL";
+
+// Theme Manager
+function toggleTheme() {
+  document.body.classList.toggle("dark-mode");
+  const isDark = document.body.classList.contains("dark-mode");
+  document.getElementById("theme-icon").textContent = isDark ? "light_mode" : "dark_mode";
+  localStorage.setItem("vibe_theme", isDark ? "dark" : "light");
+}
+if (localStorage.getItem("vibe_theme") === "dark") {
+  document.body.classList.add("dark-mode");
+  document.getElementById("theme-icon").textContent = "light_mode";
+}
+
+// Location Manager
+function changeLocation() {
+  const loc = prompt("Enter active location:", activeLocation);
+  if (loc && loc.trim()) {
+    activeLocation = loc.trim();
+    document.getElementById("loc-text").textContent = activeLocation;
+    showToast("Active location set to " + activeLocation);
+  }
+}
+
+function filterVibe(category) {
+  sendExample(`Find ${category} in ${activeLocation}`);
+}
+
+function sendExample(text) {
+  input.value = text;
+  form.dispatchEvent(new Event("submit", { cancelable: true }));
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+function clearChat() {
+  if (confirm("Clear conversation log?")) {
+    log.innerHTML = "";
+    showToast("Conversation cleared.");
+  }
+}
+
+function exportChat() {
+  const text = log.innerText;
+  if (!text) { showToast("No transcript to copy."); return; }
+  navigator.clipboard.writeText(text).then(() => showToast("Transcript copied to clipboard!"));
+}
+
+// Lightbox Modal
+function openLightbox(src) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightboxModal").classList.add("active");
+}
+function closeLightbox() {
+  document.getElementById("lightboxModal").classList.remove("active");
+}
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function bubble(who) {
+  const row = el("div", "msg-row " + who);
+  const avatar = el("div", "avatar");
+  
+  if (who === "agent") {
+    avatar.innerHTML = '<span class="material-symbols-outlined">auto_awesome</span>';
+  } else {
+    avatar.innerHTML = '<span class="material-symbols-outlined">person</span>';
+  }
+  
+  const b = el("div", "bubble");
+  row.appendChild(avatar);
+  row.appendChild(b);
+  log.appendChild(row);
+  log.scrollTop = log.scrollHeight;
+  return b;
+}
+
+function setThinkingState(b) {
+  b.innerHTML = `
+    <div class="typing-container">
+      <span>Vibe Now is discovering places...</span>
+      <div class="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+}
+
+/* ----------------------------------------------------------------------------
+ * A2UI mini-renderer
+ * -------------------------------------------------------------------------- */
+function boundStr(v) {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v.literalString === "string") return v.literalString;
+  return "";
+}
+
+function childIds(props) {
+  const ids = [];
+  if (props && typeof props.child === "string") ids.push(props.child);
+  const ch = props && props.children;
+  if (ch && Array.isArray(ch.explicitList)) for (const c of ch.explicitList) if (typeof c === "string") ids.push(c);
+  return ids;
+}
+
+function iconName(n) { return String(n || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase(); }
+
+function buildNode(id, comps, seen) {
+  if (!id || seen.has(id)) return null;
+  seen.add(id);
+  const spec = comps[id];
+  if (!spec || typeof spec !== "object") return null;
+  const type = Object.keys(spec)[0];
+  const props = spec[type] || {};
+
+  let dom = null;
+  switch (type) {
+    case "Card": {
+      dom = el("div", "a2card");
+      break;
+    }
+    case "Column": {
+      dom = el("div", "a2col");
+      break;
+    }
+    case "Row": {
+      const cls = "a2row" + (props.distribution === "spaceBetween" ? " between" : "");
+      dom = el("div", cls);
+      break;
+    }
+    case "Text": {
+      const hint = String(props.usageHint || "body").toLowerCase();
+      const cls = "a2text a2-" + (["h1","h2","h3","h4","caption"].includes(hint) ? hint : "body");
+      dom = el("p", cls, boundStr(props.text));
+      break;
+    }
+    case "Divider": {
+      dom = el("hr", "a2divider");
+      break;
+    }
+    case "List": {
+      dom = el("div", "a2col");
+      break;
+    }
+    case "Image": {
+      const url = props.url || {};
+      const src = boundStr(url.literalString || url);
+      if (/^https?:\/\//i.test(src) || /^data:image\//i.test(src)) {
+        dom = el("img", "a2img");
+        dom.src = src;
+        dom.onload = () => {
+          dom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        if (props.altText) dom.alt = boundStr(props.altText);
+        dom.onclick = (e) => { e.stopPropagation(); openLightbox(src); };
+      }
+      break;
+    }
+    case "Icon": {
+      const name = iconName(props.name);
+      dom = el("span", "material-symbols-outlined", name);
+      break;
+    }
+  }
+
+  if (!dom) dom = el("div", "a2fallback", `[${type}]`);
+
+  for (const cid of childIds(props)) {
+    const childDom = buildNode(cid, comps, seen);
+    if (childDom) dom.appendChild(childDom);
+  }
+  return dom;
+}
+
+function renderSurface(messages, container) {
+  const comps = {};
+  const roots = [];
+  for (const m of messages) {
+    if (m.beginRendering && typeof m.beginRendering.root === "string") roots.push(m.beginRendering.root);
+    const su = m.surfaceUpdate;
+    if (su && Array.isArray(su.components)) for (const c of su.components) if (c && c.id && c.component) comps[c.id] = c.component;
+  }
+  let rootIds = roots.filter(r => comps[r]);
+  if (rootIds.length === 0) {
+    const referenced = new Set();
+    for (const id in comps) { const spec = comps[id]; childIds(spec[Object.keys(spec)[0]] || {}).forEach(c => referenced.add(c)); }
+    rootIds = Object.keys(comps).filter(id => !referenced.has(id));
+  }
+  let drew = false;
+  for (const rid of rootIds) { const node = buildNode(rid, comps, new Set()); if (node) { container.appendChild(node); drew = true; } }
+  return drew;
+}
+
+function flattenText(messages) {
+  const out = [];
+  for (const m of messages) {
+    const su = m.surfaceUpdate;
+    if (su && Array.isArray(su.components)) for (const c of su.components) if (c && c.component && c.component.Text) out.push(boundStr(c.component.Text.text));
+  }
+  return out.join("\n").trim();
+}
+
+function renderReply(b, parts) {
+  b.textContent = "";
+  const texts = parts.filter(p => p && (p.kind === "text" || (!p.kind && p.text))).map(p => p.text || "");
+  const a2ui = parts.filter(p => p && p.kind === "a2ui" && p.data).map(p => p.data);
+
+  const textStr = texts.join("\n").trim();
+  if (textStr) b.appendChild(el("div", null, textStr));
+
+  if (a2ui.length) {
+    b.classList.add("rich");
+    if (!renderSurface(a2ui, b)) b.appendChild(el("div", null, flattenText(a2ui) || "(no card content)"));
+  }
+  if (!b.childNodes.length) b.textContent = "(no response)";
+
+  const img = b.querySelector("img");
+  if (img) {
+    img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => { img.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+  } else {
+    b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+form.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  bubble("user").textContent = text;
+  input.value = "";
+  const b = bubble("agent");
+  setThinkingState(b);
+
+  try {
+    const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { throw new Error(`Server returned non-JSON (HTTP ${res.status}). ${raw.slice(0, 300)}`); }
+    renderReply(b, data.parts || []);
+  } catch (e) {
+    b.textContent = "Error: " + e.message;
+  }
+});
+</script>
+</body>
+</html>
